@@ -1,0 +1,8 @@
+{
+  "_comentario": "Única ligação ao robot de emails: ficheiros com domínios que já contactaste, para o prospector não os devolver outra vez. Aceita wildcards e caminhos relativos a esta pasta. Deixa a lista vazia [] para desligar por completo.",
+  "exclusoes": [
+    "../enviados.txt",
+    "../urls_extraidos.txt",
+    "../Alvos*.txt"
+  ]
+}
