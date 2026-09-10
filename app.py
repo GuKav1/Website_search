@@ -113,9 +113,16 @@ with st.form("procura"):
     except Exception:
         txts = []
     c6, c7 = st.columns([2, 2])
-    sementes = c6.multiselect("Sementes (para links / mirrors / commoncrawl)", txts,
-                              default=[f for f in txts if f.lower().startswith("alvos")][:1],
-                              help=f"Ficheiros .txt em {pasta_pai}")
+    if txts:
+        sementes = c6.multiselect("Sementes (para links / mirrors / commoncrawl)", txts,
+                                  default=[f for f in txts if f.lower().startswith("alvos")][:1],
+                                  help=f"Ficheiros .txt em {pasta_pai}")
+    else:
+        sementes = []
+        c6.caption("Sementes: sem ficheiros locais — usa o upload aqui ao lado.")
+    carregado = c6.file_uploader("Carregar sementes (.txt, 1 domínio por linha)",
+                                 type=["txt", "csv"],
+                                 help="Necessário na cloud, onde não há ficheiros locais.")
     validar = c7.checkbox("Validar (abrir cada site, dar score)", value=True)
     min_score = c7.slider("Score mínimo para entrar na lista", 0, 100, 40, disabled=not validar)
 
@@ -138,7 +145,7 @@ with st.form("procura"):
 if arrancou:
     if not fontes:
         st.error("Escolhe pelo menos uma fonte.")
-    elif categoria == "(nenhuma)" and not keywords.strip() and not sementes:
+    elif categoria == "(nenhuma)" and not keywords.strip() and not sementes and carregado is None:
         st.error("Precisas de uma categoria, palavras-chave ou sementes.")
     else:
         carimbo = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -156,8 +163,14 @@ if arrancou:
             cmd += ["--categoria", categoria]
         if keywords.strip():
             cmd += ["--keywords", keywords.strip()]
-        if sementes:
-            cmd += ["--seeds", ",".join(os.path.join(pasta_pai, s) for s in sementes)]
+        caminhos_sementes = [os.path.join(pasta_pai, s) for s in sementes]
+        if carregado is not None:
+            destino = os.path.join(DIR_OUT, "_sementes_carregadas.txt")
+            with open(destino, "wb") as f:
+                f.write(carregado.getvalue())
+            caminhos_sementes.append(destino)
+        if caminhos_sementes:
+            cmd += ["--seeds", ",".join(caminhos_sementes)]
         if validar:
             cmd += ["--validar"]
         if repetir:
