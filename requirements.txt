@@ -1,3 +1,7 @@
 requests
 beautifulsoup4
 dnspython
+
+# só para a interface web (app.py); o CLI não precisa
+streamlit
+pandas

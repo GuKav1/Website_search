@@ -8,12 +8,28 @@ tu carrega-la no robot quando quiseres. Nenhuma delas precisa da outra para func
 
 ```
 ~/Desktop/Python/prospector/
-├── prospector.py        o robot
+├── prospector.py        o motor (linha de comandos)
+├── app.py               interface web
 ├── config.json          quem excluir (ver abaixo)
-├── requirements.txt     requests · beautifulsoup4 · dnspython
+├── requirements.txt
 ├── resultados/          listas geradas + histórico
 └── .cache/              cache das fontes
 ```
+
+## Interface web
+
+```bash
+cd ~/Desktop/Python/prospector
+../.venv/bin/streamlit run app.py --server.port 8502
+```
+
+Abre em `http://localhost:8502`: escolhes categoria, país, palavras-chave e fontes,
+carregas em **Procurar sites** e vês o log ao vivo. No fim tens a tabela com os scores
+e botões de download do `.txt` e do `.csv`.
+
+A interface é só uma casca — quem trabalha é o `prospector.py`, lançado como processo
+separado. Por isso **podes fechar o browser a meio que a pesquisa continua**; quando
+voltares a abrir a página, ela reencontra a corrida e mostra o log onde ia.
 
 ```bash
 cd ~/Desktop/Python/prospector
@@ -49,7 +65,7 @@ seja o que for fora da sua própria pasta — fica 100% autónomo.
 | `sellers` | `sellers.json` de ~25 SSPs = lista pública de publishers | sites que **já monetizam** — prospect perfeito |
 | `commoncrawl` | enumera todos os hosts vistos sob um domínio semente | subdomínios e mirrors históricos |
 
-## Receitas
+## Receitas (linha de comandos)
 
 **Nicho novo num país** (do zero):
 ```bash
