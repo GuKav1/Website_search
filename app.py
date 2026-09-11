@@ -155,6 +155,10 @@ with st.form("procura"):
         max_mirror = a3.number_input("Candidatos DNS (mirrors)", 1000, 300000, 40000, step=1000)
         mirror_tlds = a3.number_input("TLDs a testar (mirrors)", 5, 51, 22)
         workers = a4.number_input("Threads de validação", 5, 80, 25)
+        max_api = a4.number_input("Travão de chamadas a API", 0, 5000, 90,
+                                  help="Google: 100 pesquisas/dia grátis, cada página conta uma. "
+                                       "Acima disso paga-se. Este travão impede a corrida de "
+                                       "gastar mais do que o que autorizas.")
         nivel = a4.selectbox("Nível", ["host", "dominio"],
                              help="host mantém ww1.x.com separado de x.com")
         repetir = st.checkbox("Ignorar o histórico (voltar a testar domínios já vistos)")
@@ -179,7 +183,8 @@ if arrancou:
                "--profundidade", str(profundidade), "--max-links-seed", str(max_links),
                "--max-mirror", str(max_mirror), "--mirror-tlds", str(mirror_tlds),
                "--workers", str(workers), "--nivel", nivel,
-               "--motores", ",".join(motores) if motores else ",".join(MOTORES_DEFEITO)]
+               "--motores", ",".join(motores) if motores else ",".join(MOTORES_DEFEITO),
+               "--max-api", str(max_api)]
         if categoria != "(nenhuma)":
             cmd += ["--categoria", categoria]
         if keywords.strip():

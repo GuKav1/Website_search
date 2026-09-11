@@ -88,7 +88,13 @@ versionado e uma chave lá dentro fica publicada no GitHub. Usa uma destas vias:
 3. na Streamlit Cloud: *Settings → Secrets* da app (o `app.py` passa-as ao motor)
 
 [serper.dev](https://serper.dev) dá 2500 pesquisas grátis; o
-[Google Programmable Search](https://developers.google.com/custom-search/v1/overview) dá 100/dia.
+[Google Programmable Search](https://developers.google.com/custom-search/v1/overview) dá 100/dia
+e cobra a partir daí (~5 USD/1000, tecto de 10 000/dia).
+
+**Cuidado com a quota**: cada *página* conta como uma pesquisa. Os valores por defeito
+(40 queries × 3 páginas) são 120 chamadas — mais do que os 100 grátis diários do Google.
+Por isso existe o `--max-api` (defeito 90): a corrida pára de usar os motores por API
+ao fim desse número de chamadas e continua com os gratuitos.
 
 Os motores correm **em paralelo** e cada um tem disjuntor: 3 respostas vazias seguidas e sai
 da corrida. Sem isso, um motor bloqueado custava mais de um minuto por query — 3 queries

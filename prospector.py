@@ -675,7 +675,7 @@ def _busca_api(motor, q, cfg, pag, conf):
     return out, "motor desconhecido"
 
 
-def fonte_busca(queries, pais, paginas=3, pausa=(1.5, 4.0), motores=None):
+def fonte_busca(queries, pais, paginas=3, pausa=(1.5, 4.0), motores=None, max_api=90):
     """Pesquisa nos motores escolhidos, com paginacao e localizacao por pais.
 
     Os motores correm em paralelo (um lento nao segura os outros) e cada um tem
@@ -691,9 +691,16 @@ def fonte_busca(queries, pais, paginas=3, pausa=(1.5, 4.0), motores=None):
     por_motor = {m: 0 for m in motores}
     falhas = {m: 0 for m in motores}
     mortos = {}
+    # Travao de quota: cada pagina de um motor por API e uma chamada paga/contada.
+    # O Google da 100/dia gratis e o defeito 40 queries x 3 paginas sao 120 chamadas
+    # - sem isto, a primeira corrida esgotava o dia (ou comecava a custar dinheiro).
+    gastas_api = [0]
 
     def _um_motor(motor, q, pag):
         if MOTORES[motor]["tipo"] == "api":
+            if gastas_api[0] >= max_api:
+                return motor, set(), f"travão de quota: {max_api} chamadas gastas"
+            gastas_api[0] += 1
             novos, erro = _busca_api(motor, q, cfg, pag, conf)
             return motor, novos, erro
         pedido = _pedido_motor(motor, q, cfg, pag)
@@ -735,6 +742,8 @@ def fonte_busca(queries, pais, paginas=3, pausa=(1.5, 4.0), motores=None):
 
     for m, razao in mortos.items():
         log(f"resumo: {m} não rendeu nada ({razao})", "!")
+    if gastas_api[0]:
+        log(f"chamadas a API pagas/contadas nesta corrida: {gastas_api[0]} (limite {max_api})")
     return achados
 
 
@@ -1180,7 +1189,8 @@ def correr(args):
         queries = gerar_queries(categoria, pais, keywords, limite=args.queries)
         log(f"queries geradas: {len(queries)}")
         juntar(fonte_busca(queries, pais, paginas=args.paginas,
-                           motores=[m.strip() for m in args.motores.split(",") if m.strip()]))
+                           motores=[m.strip() for m in args.motores.split(",") if m.strip()],
+                           max_api=args.max_api))
     if "crtsh" in fontes:
         juntar(fonte_crtsh(termos + [marca_do_dominio(s) for s in list(seeds)[:15]]))
     if "crux" in fontes:
@@ -1313,6 +1323,8 @@ paises:     """ + ", ".join(sorted(PAISES.keys())))
     p.add_argument("--repetir", action="store_true", help="nao usar o historico _ja_vistos.txt")
     p.add_argument("--queries", type=int, default=40, help="numero de queries de pesquisa a gerar")
     p.add_argument("--paginas", type=int, default=3, help="paginas de resultados por query")
+    p.add_argument("--max-api", type=int, default=90, dest="max_api",
+                   help="travão: máximo de chamadas a motores por API numa corrida (Google dá 100/dia grátis)")
     p.add_argument("--motores", default=",".join(MOTORES_DEFEITO),
                    help="motores da fonte 'busca': " + ", ".join(f"{k} ({v['estado']})" for k, v in MOTORES.items()))
     p.add_argument("--profundidade", type=int, default=1, help="niveis do grafo de links")
