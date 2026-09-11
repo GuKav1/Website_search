@@ -57,13 +57,41 @@ seja o que for fora da sua própria pasta — fica 100% autónomo.
 
 | fonte | o que faz | porque é que apanha o que o SimilarWeb não tem |
 |---|---|---|
-| `busca` | DuckDuckGo (html+lite) + Bing, queries geradas em 17 idiomas, com paginação, `site:.tld`, `intitle:` e **footprints de CMS** (`"Powered by DooPlay"`, `"Kernel Video Sharing"`…) | os footprints devolvem centenas de clones do mesmo nicho que nenhum ranking lista |
+| `busca` | motores à escolha, queries geradas em 17 idiomas, com paginação, `site:.tld`, `intitle:` e **footprints de CMS** (`"Powered by DooPlay"`, `"Kernel Video Sharing"`…) | os footprints devolvem centenas de clones do mesmo nicho que nenhum ranking lista |
 | `crtsh` | Certificate Transparency: todo o domínio com HTTPS deixa rasto público | apanha domínios **novos e mirrors** dias depois de existirem |
 | `links` | grafo de links: abre cada semente e extrai os domínios externos, N níveis | sites destes nichos linkam-se uns aos outros em massa |
 | `mirrors` | gera permutações (`ww1.marca.to`, `marca2.cc`, `marcahd.sbs`…) e testa DNS | encontra mirrors vivos que **não estão em índice nenhum** |
 | `crux` | Chrome UX Report por país (dados reais de tráfego do Chrome) | tráfego medido, não estimado, com corte por país |
 | `sellers` | `sellers.json` de ~25 SSPs = lista pública de publishers | sites que **já monetizam** — prospect perfeito |
 | `commoncrawl` | enumera todos os hosts vistos sob um domínio semente | subdomínios e mirrors históricos |
+
+## Motores de busca
+
+`--motores bing,duckduckgo` (ou o selector na interface). Estado que observei a testar
+de um IP residencial:
+
+| motor | estado | nota |
+|---|---|---|
+| `bing` | ✅ fiável | o que mais rende |
+| `duckduckgo` | ✅ fiável | |
+| `ddg-lite` · `yandex` | ⚠️ instável | rendem pouco, mas rendem |
+| `brave` · `mojeek` · `startpage` · `marginalia` | ⚠️ instável | quase sempre captcha ou 429 |
+| `google-api` · `serper` | 🔑 precisa de chave | ver abaixo |
+
+**O google.com normal não é possível.** Não é bloqueio contornável com headers ou cookies:
+devolve 92 KB de casca JavaScript, zero links de resultado, sem captcha. Não há HTML para ler.
+Para ter Google a sério, uma chave no `config.json`:
+
+```json
+{ "serper_api_key": "...", "google_cse": { "key": "...", "cx": "..." } }
+```
+
+[serper.dev](https://serper.dev) dá 2500 pesquisas grátis; o
+[Google Programmable Search](https://developers.google.com/custom-search/v1/overview) dá 100/dia.
+
+Os motores correm **em paralelo** e cada um tem disjuntor: 3 respostas vazias seguidas e sai
+da corrida. Sem isso, um motor bloqueado custava mais de um minuto por query — 3 queries
+demoravam 23 minutos, agora demoram 17 segundos.
 
 ## Receitas (linha de comandos)
 

@@ -13,7 +13,7 @@ from datetime import datetime
 import streamlit as st
 import pandas as pd
 
-from prospector import NOMES, PAISES, DIR_OUT, BASE
+from prospector import NOMES, PAISES, DIR_OUT, BASE, MOTORES, MOTORES_DEFEITO
 
 FICH_EXEC = os.path.join(DIR_OUT, "_execucao.json")
 FICH_LOG = os.path.join(DIR_OUT, "_execucao.log")
@@ -106,6 +106,17 @@ with st.form("procura"):
                             help="\n\n".join(f"**{k}** — {v}" for k, v in AJUDA_FONTES.items()))
     maximo = c5.number_input("Máx. domínios", 50, 50000, 1000, step=50)
 
+    ETIQUETA = {"fiavel": "✅", "instavel": "⚠️", "api": "🔑"}
+    motores = st.multiselect(
+        "Motores de busca (para a fonte «busca»)", list(MOTORES.keys()), default=MOTORES_DEFEITO,
+        format_func=lambda m: f"{ETIQUETA[MOTORES[m]['estado']]} {m}",
+        help="✅ devolve resultados de forma consistente · "
+             "⚠️ responde às vezes, leva captcha com frequência · "
+             "🔑 precisa de chave no config.json. "
+             "O google.com normal não é possível: a página de resultados é só JavaScript, "
+             "não há HTML para ler — daí o google-api. "
+             "Os motores correm em paralelo e os bloqueados desligam-se sozinhos.")
+
     # sementes: ficheiros .txt que existam na pasta acima (a do robot)
     pasta_pai = os.path.dirname(BASE)
     try:
@@ -158,7 +169,8 @@ if arrancou:
                "--queries", str(queries), "--paginas", str(paginas),
                "--profundidade", str(profundidade), "--max-links-seed", str(max_links),
                "--max-mirror", str(max_mirror), "--mirror-tlds", str(mirror_tlds),
-               "--workers", str(workers), "--nivel", nivel]
+               "--workers", str(workers), "--nivel", nivel,
+               "--motores", ",".join(motores) if motores else ",".join(MOTORES_DEFEITO)]
         if categoria != "(nenhuma)":
             cmd += ["--categoria", categoria]
         if keywords.strip():

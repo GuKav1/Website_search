@@ -335,9 +335,12 @@ def http(url, timeout=25, lang=None, cache_horas=0, params=None, stream_max=None
                     return f.read()
             except Exception:
                 pass
+    # timeout como tuplo (ligar, ler): um servidor que aceita a ligacao e depois
+    # responde a conta-gotas nao pode prender a corrida indefinidamente
+    tmo = timeout if isinstance(timeout, tuple) else (8, timeout)
     for tentativa in range(2):
         try:
-            r = requests.get(url, params=params, headers=headers(lang), timeout=timeout,
+            r = requests.get(url, params=params, headers=headers(lang), timeout=tmo,
                              verify=False, allow_redirects=True)
             if r.status_code == 200:
                 txt = r.text
@@ -351,7 +354,8 @@ def http(url, timeout=25, lang=None, cache_horas=0, params=None, stream_max=None
                         pass
                 return txt
             if r.status_code in (429, 403):
-                time.sleep(3 + tentativa * 4)
+                time.sleep(1.5)      # sem esperas longas: o motor esta bloqueado, insistir nao ajuda
+                break
         except Exception:
             time.sleep(1.5)
     return None
@@ -562,25 +566,161 @@ def _extrair_dominios_html(html, ignorar=("duckduckgo", "bing.com", "microsoft",
     return out
 
 
-def fonte_busca(queries, pais, paginas=3, pausa=(1.5, 4.0)):
-    """DuckDuckGo (html + lite) + Bing, com paginacao e localizacao por pais."""
+# Motores de busca. O estado e o que eu observei a testar de um IP residencial:
+#   fiavel   -> devolve resultados de forma consistente
+#   instavel -> responde as vezes; leva captcha ou 429 com frequencia
+#   api      -> precisa de chave em config.json (nao ha scraping que resolva)
+MOTORES = {
+    "bing":        {"estado": "fiavel",   "tipo": "html"},
+    "duckduckgo":  {"estado": "fiavel",   "tipo": "html"},
+    "ddg-lite":    {"estado": "instavel", "tipo": "html"},
+    "brave":       {"estado": "instavel", "tipo": "html"},
+    "mojeek":      {"estado": "instavel", "tipo": "html"},
+    "startpage":   {"estado": "instavel", "tipo": "html"},
+    "yandex":      {"estado": "instavel", "tipo": "html"},
+    "marginalia":  {"estado": "instavel", "tipo": "html"},
+    "google-api":  {"estado": "api",      "tipo": "api", "chave": "google_cse"},
+    "serper":      {"estado": "api",      "tipo": "api", "chave": "serper_api_key"},
+}
+MOTORES_DEFEITO = ["bing", "duckduckgo"]
+
+
+def carregar_config():
+    if os.path.exists(FICH_CONFIG):
+        try:
+            with open(FICH_CONFIG, encoding="utf8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def _pedido_motor(motor, q, cfg, pag):
+    """Devolve (url, params) para os motores de HTML."""
+    lg = cfg["bing"].split("-")[0]
+    if motor == "bing":
+        return ("https://www.bing.com/search",
+                {"q": q, "count": 30, "first": pag * 30 + 1, "setlang": lg})
+    if motor == "duckduckgo":
+        return ("https://html.duckduckgo.com/html/", {"q": q, "kl": cfg["ddg"], "s": pag * 30})
+    if motor == "ddg-lite":
+        return ("https://lite.duckduckgo.com/lite/", {"q": q, "kl": cfg["ddg"], "s": pag * 30})
+    if motor == "brave":
+        return ("https://search.brave.com/search", {"q": q, "offset": pag})
+    if motor == "mojeek":
+        return ("https://www.mojeek.com/search", {"q": q, "s": pag * 10})
+    if motor == "startpage":
+        return ("https://www.startpage.com/sp/search", {"query": q, "page": pag + 1})
+    if motor == "yandex":
+        return ("https://yandex.com/search/", {"text": q, "p": pag})
+    if motor == "marginalia":
+        return ("https://search.marginalia.nu/search", {"query": q, "page": pag + 1})
+    return None
+
+
+def _busca_api(motor, q, cfg, pag, conf):
+    """Google a serio so por API oficial: a pagina de resultados do google.com
+    e uma casca JavaScript, nao ha HTML para ler."""
+    out = set()
+    if motor == "serper":
+        chave = conf.get("serper_api_key", "")
+        if not chave:
+            return out, "sem chave 'serper_api_key' no config.json"
+        try:
+            r = requests.post("https://google.serper.dev/search",
+                              headers={"X-API-KEY": chave, "Content-Type": "application/json"},
+                              json={"q": q, "gl": cfg.get("gl", "pt"), "num": 100, "page": pag + 1},
+                              timeout=25)
+            if r.status_code != 200:
+                return out, f"HTTP {r.status_code}"
+            for item in r.json().get("organic", []):
+                d = normalizar_host(item.get("link", ""))
+                if d:
+                    out.add(d)
+        except Exception as e:
+            return out, type(e).__name__
+        return out, None
+    if motor == "google-api":
+        c = conf.get("google_cse") or {}
+        if not (c.get("key") and c.get("cx")):
+            return out, "falta 'google_cse': {key, cx} no config.json"
+        try:
+            r = requests.get("https://www.googleapis.com/customsearch/v1",
+                             params={"key": c["key"], "cx": c["cx"], "q": q,
+                                     "num": 10, "start": pag * 10 + 1},
+                             timeout=25)
+            if r.status_code != 200:
+                return out, f"HTTP {r.status_code}"
+            for item in r.json().get("items", []):
+                d = normalizar_host(item.get("link", ""))
+                if d:
+                    out.add(d)
+        except Exception as e:
+            return out, type(e).__name__
+        return out, None
+    return out, "motor desconhecido"
+
+
+def fonte_busca(queries, pais, paginas=3, pausa=(1.5, 4.0), motores=None):
+    """Pesquisa nos motores escolhidos, com paginacao e localizacao por pais.
+
+    Os motores correm em paralelo (um lento nao segura os outros) e cada um tem
+    disjuntor: ao fim de 3 respostas vazias seguidas sai da corrida. Sem isto,
+    um motor a devolver captcha custava mais de um minuto por query, sempre.
+    """
     cfg = PAISES.get(pais.upper(), PAISES["GLOBAL"])
+    conf = carregar_config()
+    motores = [m for m in (motores or MOTORES_DEFEITO) if m in MOTORES]
+    if not motores:
+        motores = list(MOTORES_DEFEITO)
     achados = {}
+    por_motor = {m: 0 for m in motores}
+    falhas = {m: 0 for m in motores}
+    mortos = {}
+
+    def _um_motor(motor, q, pag):
+        if MOTORES[motor]["tipo"] == "api":
+            novos, erro = _busca_api(motor, q, cfg, pag, conf)
+            return motor, novos, erro
+        pedido = _pedido_motor(motor, q, cfg, pag)
+        if not pedido:
+            return motor, set(), "sem pedido"
+        html = http(pedido[0], lang=cfg["bing"], params=pedido[1], cache_horas=12, timeout=(8, 15))
+        return motor, _extrair_dominios_html(html), (None if html else "sem resposta")
+
     for q in queries:
         for pag in range(paginas):
-            urls = [
-                ("https://html.duckduckgo.com/html/", {"q": q, "kl": cfg["ddg"], "s": pag * 30}),
-                ("https://lite.duckduckgo.com/lite/", {"q": q, "kl": cfg["ddg"], "s": pag * 30}),
-                ("https://www.bing.com/search", {"q": q, "count": 30, "first": pag * 30 + 1,
-                                                 "setlang": cfg["bing"].split("-")[0], "cc": pais.upper()[:2]}),
-            ]
-            for url, params in urls:
-                html = http(url, lang=cfg["bing"], params=params, cache_horas=12, timeout=20)
-                novos = _extrair_dominios_html(html)
-                for d in novos:
-                    achados.setdefault(d, "busca")
-                time.sleep(random.uniform(*pausa))
-        log(f"busca: '{q[:55]}' -> total acumulado {len(achados)}")
+            activos = [m for m in motores if m not in mortos]
+            if not activos:
+                log("busca: todos os motores desligados", "!")
+                return achados
+            t0 = time.time()
+            with ThreadPoolExecutor(max_workers=len(activos)) as ex:
+                futs = [ex.submit(_um_motor, m, q, pag) for m in activos]
+                for f in as_completed(futs):
+                    try:
+                        motor, novos, erro = f.result()
+                    except Exception:
+                        continue
+                    if erro and MOTORES[motor]["tipo"] == "api":
+                        mortos[motor] = erro
+                        log(f"{motor}: {erro} — desligado", "!")
+                        continue
+                    antes = len(achados)
+                    for d in novos:
+                        achados.setdefault(d, f"busca:{motor}")
+                    ganho = len(achados) - antes
+                    por_motor[motor] += ganho
+                    falhas[motor] = 0 if novos else falhas[motor] + 1
+                    if falhas[motor] >= 3:
+                        mortos[motor] = "3 respostas vazias seguidas (captcha/bloqueio)"
+                        log(f"{motor}: desligado — {mortos[motor]}", "!")
+            time.sleep(random.uniform(*pausa))
+        log(f"busca: '{q[:42]}' ({time.time()-t0:.0f}s) -> {len(achados)} acumulados  "
+            + " ".join(f"{m}={por_motor[m]}" for m in motores))
+
+    for m, razao in mortos.items():
+        log(f"resumo: {m} não rendeu nada ({razao})", "!")
     return achados
 
 
@@ -1025,7 +1165,8 @@ def correr(args):
     if "busca" in fontes:
         queries = gerar_queries(categoria, pais, keywords, limite=args.queries)
         log(f"queries geradas: {len(queries)}")
-        juntar(fonte_busca(queries, pais, paginas=args.paginas))
+        juntar(fonte_busca(queries, pais, paginas=args.paginas,
+                           motores=[m.strip() for m in args.motores.split(",") if m.strip()]))
     if "crtsh" in fontes:
         juntar(fonte_crtsh(termos + [marca_do_dominio(s) for s in list(seeds)[:15]]))
     if "crux" in fontes:
@@ -1158,6 +1299,8 @@ paises:     """ + ", ".join(sorted(PAISES.keys())))
     p.add_argument("--repetir", action="store_true", help="nao usar o historico _ja_vistos.txt")
     p.add_argument("--queries", type=int, default=40, help="numero de queries de pesquisa a gerar")
     p.add_argument("--paginas", type=int, default=3, help="paginas de resultados por query")
+    p.add_argument("--motores", default=",".join(MOTORES_DEFEITO),
+                   help="motores da fonte 'busca': " + ", ".join(f"{k} ({v['estado']})" for k, v in MOTORES.items()))
     p.add_argument("--profundidade", type=int, default=1, help="niveis do grafo de links")
     p.add_argument("--max-links-seed", type=int, default=300, dest="max_links_seed", help="sites a varrer por nivel no grafo de links")
     p.add_argument("--workers", type=int, default=25, help="threads na validacao")
