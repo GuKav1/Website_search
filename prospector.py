@@ -612,25 +612,44 @@ def gerar_queries(categoria, pais, keywords, limite=40):
     if categoria and categoria in NOMES:
         for l in dict.fromkeys([lang, "en"]):
             for n in NOMES[categoria].get(l, []):
-                pares.append((l, n))
+                pares.append((l, n, True))
+    # Palavras-chave do utilizador: entram no idioma do pais E em ingles. Se ele
+    # escreveu "watch anime" com pais=PT, colar-lhe "ver ... grátis" dava
+    # "ver watch anime grátis" - frase de lingua nenhuma. Assim ha sempre metade
+    # das queries coerentes, escreva ele na lingua que escrever.
     for k in keywords:
-        if k.strip():
-            pares.append((lang, k.strip()))   # keywords do utilizador seguem o idioma do pais
-    pares = list(dict.fromkeys(pares))
+        k = k.strip()
+        if k:
+            # uma palavra solta e um substantivo: vale a pena decorar com verbos
+            # e modificadores. Uma frase feita ("watch anime", "assistir gratis")
+            # ja traz verbo e modificador - decorar so produz disparates tipo
+            # "stream free anime free".
+            decorar = len(k.split()) == 1
+            for l in dict.fromkeys([lang, "en"]):
+                pares.append((l, k, decorar))
+    # dedupe insensivel a maiusculas: "Anime" e "anime" sao a mesma pesquisa
+    vistos, unicos = set(), []
+    for l, n, dec in pares:
+        chave = (l, n.lower())
+        if chave not in vistos:
+            vistos.add(chave)
+            unicos.append((l, n.lower(), dec))
+    pares = unicos
     if not pares:
         return []
 
     qs = []
-    for l, nome in pares:
+    for l, nome, decorar in pares:
         lex = LEXICO.get(l, LEXICO["en"])
         qs.append(nome)
-        for v in lex["v"][:2]:
-            for m in lex["m"][:4]:
-                qs.append(f"{v} {nome} {m}")
-        for m in lex["m"][:3]:
-            qs.append(f"{nome} {m}")
-        for s in lex["site"][:2]:
-            qs.append(f"{s} {nome}")
+        if decorar:
+            for v in lex["v"][:2]:
+                for m in lex["m"][:4]:
+                    qs.append(f"{v} {nome} {m}")
+            for m in lex["m"][:3]:
+                qs.append(f"{nome} {m}")
+            for s in lex["site"][:2]:
+                qs.append(f"{s} {nome}")
         # operadores que empurram o long tail para a superficie
         if cfg["tld"]:
             qs.append(f"{nome} site:{cfg['tld']}")
