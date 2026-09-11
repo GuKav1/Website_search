@@ -66,7 +66,16 @@ def processo_vivo(pid):
 
 def arrancar(cmd, fich_txt, fich_csv):
     log = open(FICH_LOG, "wb")
-    p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, cwd=BASE)
+    # na Streamlit Cloud as chaves vivem nos Secrets da app; passa-as ao processo
+    # filho por ambiente (nunca por ficheiro, que iria parar ao repositorio)
+    ambiente = dict(os.environ)
+    for nome in ("SERPER_API_KEY", "GOOGLE_CSE_KEY", "GOOGLE_CSE_CX"):
+        try:
+            if nome in st.secrets:
+                ambiente[nome] = str(st.secrets[nome])
+        except Exception:
+            pass
+    p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, cwd=BASE, env=ambiente)
     with open(FICH_EXEC, "w", encoding="utf8") as f:
         json.dump({"pid": p.pid, "cmd": cmd, "txt": fich_txt, "csv": fich_csv,
                    "inicio": time.time()}, f)

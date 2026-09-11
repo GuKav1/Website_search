@@ -1,0 +1,5 @@
+{
+  "_": "Copia este ficheiro para chaves.json e mete lá as tuas chaves. O chaves.json está no .gitignore e nunca vai para o GitHub. Em alternativa usa variáveis de ambiente: SERPER_API_KEY, GOOGLE_CSE_KEY, GOOGLE_CSE_CX.",
+  "serper_api_key": "",
+  "google_cse": { "key": "", "cx": "" }
+}

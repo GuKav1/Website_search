@@ -80,11 +80,12 @@ de um IP residencial:
 
 **O google.com normal não é possível.** Não é bloqueio contornável com headers ou cookies:
 devolve 92 KB de casca JavaScript, zero links de resultado, sem captcha. Não há HTML para ler.
-Para ter Google a sério, uma chave no `config.json`:
+Para ter Google a sério, uma chave. **Nunca no `config.json`** — esse ficheiro está
+versionado e uma chave lá dentro fica publicada no GitHub. Usa uma destas vias:
 
-```json
-{ "serper_api_key": "...", "google_cse": { "key": "...", "cx": "..." } }
-```
+1. `chaves.json` na pasta (está no `.gitignore`) — copia o `chaves.json.exemplo`
+2. variáveis de ambiente `SERPER_API_KEY`, `GOOGLE_CSE_KEY`, `GOOGLE_CSE_CX`
+3. na Streamlit Cloud: *Settings → Secrets* da app (o `app.py` passa-as ao motor)
 
 [serper.dev](https://serper.dev) dá 2500 pesquisas grátis; o
 [Google Programmable Search](https://developers.google.com/custom-search/v1/overview) dá 100/dia.

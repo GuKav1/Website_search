@@ -585,14 +585,28 @@ MOTORES = {
 MOTORES_DEFEITO = ["bing", "duckduckgo"]
 
 
+FICH_CHAVES = os.path.join(BASE, "chaves.json")
+
+
 def carregar_config():
-    if os.path.exists(FICH_CONFIG):
-        try:
-            with open(FICH_CONFIG, encoding="utf8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
+    """config.json (versionado) para definicoes; chaves.json e variaveis de
+    ambiente para segredos. O config.json esta no repositorio publico: uma chave
+    la dentro fica publicada, por isso NAO se leem chaves de la."""
+    conf = {}
+    for fich in (FICH_CONFIG, FICH_CHAVES):
+        if os.path.exists(fich):
+            try:
+                with open(fich, encoding="utf8") as f:
+                    conf.update(json.load(f))
+            except Exception as e:
+                log(f"{os.path.basename(fich)} ilegível ({e}); a ignorar", "!")
+    # ambiente ganha a tudo (e como a Streamlit Cloud passa os secrets)
+    if os.environ.get("SERPER_API_KEY"):
+        conf["serper_api_key"] = os.environ["SERPER_API_KEY"]
+    if os.environ.get("GOOGLE_CSE_KEY") and os.environ.get("GOOGLE_CSE_CX"):
+        conf["google_cse"] = {"key": os.environ["GOOGLE_CSE_KEY"],
+                              "cx": os.environ["GOOGLE_CSE_CX"]}
+    return conf
 
 
 def _pedido_motor(motor, q, cfg, pag):
@@ -625,7 +639,7 @@ def _busca_api(motor, q, cfg, pag, conf):
     if motor == "serper":
         chave = conf.get("serper_api_key", "")
         if not chave:
-            return out, "sem chave 'serper_api_key' no config.json"
+            return out, "sem chave: põe SERPER_API_KEY no ambiente ou em chaves.json"
         try:
             r = requests.post("https://google.serper.dev/search",
                               headers={"X-API-KEY": chave, "Content-Type": "application/json"},
@@ -643,7 +657,7 @@ def _busca_api(motor, q, cfg, pag, conf):
     if motor == "google-api":
         c = conf.get("google_cse") or {}
         if not (c.get("key") and c.get("cx")):
-            return out, "falta 'google_cse': {key, cx} no config.json"
+            return out, "sem chave: põe GOOGLE_CSE_KEY/GOOGLE_CSE_CX no ambiente ou em chaves.json"
         try:
             r = requests.get("https://www.googleapis.com/customsearch/v1",
                              params={"key": c["key"], "cx": c["cx"], "q": q,
