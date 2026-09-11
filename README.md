@@ -162,5 +162,6 @@ por isso podes baixar o corte sem correr tudo outra vez.
   `--max-mirror` (default 40000 candidatos, ~40s) e `--mirror-tlds` (default 22 de 51).
 - `--tld-pais` só aceita domínios com o ccTLD do país (ex.: só `.pt`).
 - Categorias: filmes, series, anime, manga, desporto, adulto, download, jogos, noticias, musica, software.
-  Países: PT BR ES MX AR US UK FR DE IT NL PL TR RU ID IN VN TH RO GR EG SA GLOBAL.
+  Países: PT BR ES MX AR US UK FR DE IT NL PL TR RU ID IN VN TH RO GR EG SA ZA GLOBAL.
+  (`SA` é a Arábia Saudita; a África do Sul é `ZA`.)
 - Para acrescentar idiomas/nichos: dicionários `LEXICO`, `NOMES` e `FOOTPRINTS` no topo do ficheiro.

@@ -81,6 +81,7 @@ PAISES = {
     "GR": {"lang": "el", "tld": ".gr", "moeda": "€", "ddg": "gr-el", "bing": "el-GR", "nome": ["ελλάδα", "greece"]},
     "EG": {"lang": "ar", "tld": ".eg", "moeda": "ج.م", "ddg": "eg-ar", "bing": "ar-EG", "nome": ["مصر", "egypt"]},
     "SA": {"lang": "ar", "tld": ".sa", "moeda": "﷼", "ddg": "xa-ar", "bing": "ar-SA", "nome": ["السعودية"]},
+    "ZA": {"lang": "en", "tld": ".co.za", "moeda": "R", "ddg": "za-en", "bing": "en-ZA", "nome": ["south africa", "suid-afrika"]},
     "GLOBAL": {"lang": "en", "tld": "", "moeda": "$", "ddg": "wt-wt", "bing": "en-US", "nome": []},
 }
 
