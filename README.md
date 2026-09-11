@@ -161,7 +161,16 @@ por isso podes baixar o corte sem correr tudo outra vez.
 - `mirrors` gera `marcas × variantes × TLDs × prefixos`, o que cresce depressa: controla com
   `--max-mirror` (default 40000 candidatos, ~40s) e `--mirror-tlds` (default 22 de 51).
 - `--tld-pais` só aceita domínios com o ccTLD do país (ex.: só `.pt`).
-- Categorias: filmes, series, anime, manga, desporto, adulto, download, jogos, noticias, musica, software.
-  Países: PT BR ES MX AR US UK FR DE IT NL PL TR RU ID IN VN TH RO GR EG SA ZA GLOBAL.
-  (`SA` é a Arábia Saudita; a África do Sul é `ZA`.)
+- **Categorias** (11): filmes, series, anime, manga, desporto, adulto, download, jogos,
+  noticias, musica, software.
+- **Países** (46 + GLOBAL), em 26 idiomas:
+  - *Europa*: PT ES FR DE IT NL BE PL CZ HU RO GR SE AT CH IE UK UA RU
+  - *Américas*: BR US CA MX AR CL CO PE
+  - *Ásia*: TR IN ID MY PH VN TH JP KR TW PK BD
+  - *África / Médio Oriente*: ZA NG KE MA DZ EG SA
+  - ⚠️ `SA` é a **Arábia Saudita**. A África do Sul é **`ZA`**.
+- O `--pais` não é um filtro rígido, é um **enviesamento**: muda o idioma das queries, o
+  ccTLD procurado, a região pedida aos motores e o ficheiro da CrUX descarregado. Um `.com`
+  com tráfego local entra à mesma — e ainda bem, porque neste nicho a maioria dos sites
+  grandes não usa ccTLD. Para filtro a sério: `--tld-pais`.
 - Para acrescentar idiomas/nichos: dicionários `LEXICO`, `NOMES` e `FOOTPRINTS` no topo do ficheiro.

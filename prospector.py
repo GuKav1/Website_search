@@ -82,6 +82,33 @@ PAISES = {
     "EG": {"lang": "ar", "tld": ".eg", "moeda": "ج.م", "ddg": "eg-ar", "bing": "ar-EG", "nome": ["مصر", "egypt"]},
     "SA": {"lang": "ar", "tld": ".sa", "moeda": "﷼", "ddg": "xa-ar", "bing": "ar-SA", "nome": ["السعودية"]},
     "ZA": {"lang": "en", "tld": ".co.za", "moeda": "R", "ddg": "za-en", "bing": "en-ZA", "nome": ["south africa", "suid-afrika"]},
+    # --- África ---
+    "NG": {"lang": "en", "tld": ".com.ng", "moeda": "₦", "ddg": "ng-en", "bing": "en-NG", "nome": ["nigeria"]},
+    "KE": {"lang": "en", "tld": ".co.ke", "moeda": "KSh", "ddg": "ke-en", "bing": "en-KE", "nome": ["kenya"]},
+    "MA": {"lang": "fr", "tld": ".ma", "moeda": "د.م.", "ddg": "ma-fr", "bing": "fr-MA", "nome": ["maroc", "المغرب"]},
+    "DZ": {"lang": "ar", "tld": ".dz", "moeda": "د.ج", "ddg": "dz-ar", "bing": "ar-DZ", "nome": ["الجزائر", "algerie"]},
+    # --- Ásia ---
+    "PH": {"lang": "en", "tld": ".ph", "moeda": "₱", "ddg": "ph-en", "bing": "en-PH", "nome": ["philippines", "pinoy"]},
+    "MY": {"lang": "ms", "tld": ".com.my", "moeda": "RM", "ddg": "my-ms", "bing": "ms-MY", "nome": ["malaysia"]},
+    "PK": {"lang": "en", "tld": ".pk", "moeda": "₨", "ddg": "pk-en", "bing": "en-PK", "nome": ["pakistan"]},
+    "BD": {"lang": "bn", "tld": ".com.bd", "moeda": "৳", "ddg": "bd-en", "bing": "bn-BD", "nome": ["bangladesh", "বাংলাদেশ"]},
+    "JP": {"lang": "ja", "tld": ".jp", "moeda": "¥", "ddg": "jp-jp", "bing": "ja-JP", "nome": ["日本"]},
+    "KR": {"lang": "ko", "tld": ".kr", "moeda": "₩", "ddg": "kr-kr", "bing": "ko-KR", "nome": ["한국"]},
+    "TW": {"lang": "zh", "tld": ".tw", "moeda": "NT$", "ddg": "tw-tzh", "bing": "zh-TW", "nome": ["台灣"]},
+    # --- Europa ---
+    "UA": {"lang": "uk", "tld": ".ua", "moeda": "₴", "ddg": "ua-uk", "bing": "uk-UA", "nome": ["україна"]},
+    "CZ": {"lang": "cs", "tld": ".cz", "moeda": "Kč", "ddg": "cz-cs", "bing": "cs-CZ", "nome": ["česko", "cesko"]},
+    "HU": {"lang": "hu", "tld": ".hu", "moeda": "Ft", "ddg": "hu-hu", "bing": "hu-HU", "nome": ["magyarország"]},
+    "SE": {"lang": "sv", "tld": ".se", "moeda": "kr", "ddg": "se-sv", "bing": "sv-SE", "nome": ["sverige"]},
+    "BE": {"lang": "nl", "tld": ".be", "moeda": "€", "ddg": "be-nl", "bing": "nl-BE", "nome": ["belgië", "belgique"]},
+    "AT": {"lang": "de", "tld": ".at", "moeda": "€", "ddg": "at-de", "bing": "de-AT", "nome": ["österreich"]},
+    "CH": {"lang": "de", "tld": ".ch", "moeda": "CHF", "ddg": "ch-de", "bing": "de-CH", "nome": ["schweiz", "suisse"]},
+    "IE": {"lang": "en", "tld": ".ie", "moeda": "€", "ddg": "ie-en", "bing": "en-IE", "nome": ["ireland", "éire"]},
+    # --- Américas ---
+    "CA": {"lang": "en", "tld": ".ca", "moeda": "$", "ddg": "ca-en", "bing": "en-CA", "nome": ["canada"]},
+    "CL": {"lang": "es", "tld": ".cl", "moeda": "$", "ddg": "cl-es", "bing": "es-CL", "nome": ["chile"]},
+    "CO": {"lang": "es", "tld": ".com.co", "moeda": "$", "ddg": "co-es", "bing": "es-CO", "nome": ["colombia"]},
+    "PE": {"lang": "es", "tld": ".pe", "moeda": "S/", "ddg": "pe-es", "bing": "es-PE", "nome": ["perú", "peru"]},
     "GLOBAL": {"lang": "en", "tld": "", "moeda": "$", "ddg": "wt-wt", "bing": "en-US", "nome": []},
 }
 
@@ -104,34 +131,49 @@ LEXICO = {
     "ro": {"v": ["vezi", "descarca"], "m": ["online gratis", "gratis", "subtitrat in romana", "hd"], "site": ["cele mai bune site-uri"]},
     "el": {"v": ["δες", "παρακολούθηση"], "m": ["online δωρεάν", "δωρεάν", "με ελληνικούς υπότιτλους"], "site": ["καλύτερες σελίδες"]},
     "ar": {"v": ["مشاهدة", "تحميل"], "m": ["اون لاين مجانا", "مجانا", "مترجم", "بجودة عالية"], "site": ["مواقع مشاهدة"]},
+    "ms": {"v": ["tonton", "muat turun"], "m": ["online percuma", "percuma", "sarikata melayu", "hd", "penuh"], "site": ["laman web tonton"]},
+    "bn": {"v": ["দেখুন", "ডাউনলোড"], "m": ["অনলাইন ফ্রি", "ফ্রি", "বাংলা সাবটাইটেল", "এইচডি"], "site": ["দেখার ওয়েবসাইট"]},
+    "ja": {"v": ["無料視聴", "ダウンロード"], "m": ["無料", "オンライン", "日本語字幕", "フル", "高画質"], "site": ["無料視聴サイト"]},
+    "ko": {"v": ["보기", "다시보기", "다운로드"], "m": ["무료", "온라인", "자막", "고화질", "링크"], "site": ["무료 사이트"]},
+    "zh": {"v": ["線上看", "下載"], "m": ["免費", "線上", "中文字幕", "高清", "完整版"], "site": ["免費線上看網站"]},
+    "uk": {"v": ["дивитися", "завантажити"], "m": ["онлайн безкоштовно", "безкоштовно", "українською", "в хорошій якості"], "site": ["сайти для перегляду"]},
+    "cs": {"v": ["sledovat", "stáhnout"], "m": ["online zdarma", "zdarma", "s titulky", "cz dabing", "hd"], "site": ["nejlepší stránky"]},
+    "hu": {"v": ["nézni", "letöltés"], "m": ["online ingyen", "ingyen", "magyarul", "teljes film", "hd"], "site": ["online néző oldalak"]},
+    "sv": {"v": ["se", "ladda ner"], "m": ["online gratis", "gratis", "svensk text", "hd"], "site": ["bästa sajter"]},
 }
 
 # Substantivos por categoria e idioma
 NOMES = {
     "filmes": {
+        "ms": ["filem"], "bn": ["মুভি", "সিনেমা"], "ja": ["映画"], "ko": ["영화"], "zh": ["電影"], "uk": ["фільми"], "cs": ["filmy"], "hu": ["filmek"], "sv": ["filmer"],
         "en": ["movies", "films"], "pt": ["filmes"], "br": ["filmes"], "es": ["peliculas", "películas"],
         "fr": ["films"], "de": ["filme"], "it": ["film"], "nl": ["films"], "pl": ["filmy"],
         "tr": ["film"], "ru": ["фильмы"], "id": ["film"], "vi": ["phim"], "th": ["หนัง"],
         "ro": ["filme"], "el": ["ταινίες"], "ar": ["افلام"],
     },
     "series": {
+        "ms": ["siri", "drama"], "bn": ["সিরিজ"], "ja": ["ドラマ", "海外ドラマ"], "ko": ["드라마"], "zh": ["影集", "電視劇"], "uk": ["серіали"], "cs": ["seriály"], "hu": ["sorozatok"], "sv": ["serier"],
         "en": ["tv series", "tv shows"], "pt": ["séries", "series"], "br": ["séries"], "es": ["series"],
         "fr": ["séries"], "de": ["serien"], "it": ["serie tv"], "nl": ["series"], "pl": ["seriale"],
         "tr": ["dizi"], "ru": ["сериалы"], "id": ["drama", "serial"], "vi": ["phim bộ"], "th": ["ซีรีย์"],
         "ro": ["seriale"], "el": ["σειρές"], "ar": ["مسلسلات"],
     },
     "anime": {
+        "ms": ["anime"], "bn": ["এনিমে"], "ja": ["アニメ"], "ko": ["애니"], "zh": ["動漫"], "uk": ["аніме"], "cs": ["anime"], "hu": ["anime"], "sv": ["anime"],
         "en": ["anime"], "pt": ["anime", "animes"], "br": ["animes"], "es": ["anime"], "fr": ["anime"],
         "de": ["anime"], "it": ["anime"], "nl": ["anime"], "pl": ["anime"], "tr": ["anime"],
         "ru": ["аниме"], "id": ["anime"], "vi": ["anime"], "th": ["อนิเมะ"], "ro": ["anime"],
         "el": ["anime"], "ar": ["انمي"],
     },
     "manga": {
+        "bn": ["মাঙ্গা"], "el": ["manga"], "nl": ["manga"], "pl": ["manga"], "ro": ["manga"], "th": ["มังงะ"],
+        "ms": ["komik"], "ja": ["漫画"], "ko": ["웹툰", "만화"], "zh": ["漫畫"], "uk": ["манга"], "cs": ["manga"], "hu": ["manga"], "sv": ["manga"],
         "en": ["manga", "webtoon", "comics"], "pt": ["manga", "mangá"], "br": ["mangá"], "es": ["manga"],
         "fr": ["manga", "scan"], "de": ["manga"], "it": ["manga"], "id": ["manga", "komik"],
         "tr": ["manga"], "ru": ["манга"], "vi": ["truyện tranh"], "ar": ["مانجا"],
     },
     "desporto": {
+        "ms": ["bola sepak langsung"], "bn": ["খেলা সরাসরি"], "ja": ["スポーツ 生中継", "サッカー 無料"], "ko": ["스포츠 중계", "축구 중계"], "zh": ["體育直播", "足球直播"], "uk": ["футбол онлайн"], "cs": ["fotbal živě"], "hu": ["élő foci"], "sv": ["fotboll live"],
         "en": ["live football", "live sports", "nba live", "ufc live"], "pt": ["futebol em direto", "desporto em direto"],
         "br": ["futebol ao vivo", "jogos ao vivo"], "es": ["futbol en vivo", "deportes en directo"],
         "fr": ["football en direct", "sport en direct"], "de": ["fussball live", "sport live"],
@@ -141,6 +183,7 @@ NOMES = {
         "ar": ["مباريات بث مباشر"],
     },
     "adulto": {
+        "ms": ["lucah"], "bn": ["সেক্স ভিডিও"], "ja": ["エロ動画", "無修正"], "ko": ["야동"], "zh": ["成人影片"], "uk": ["порно"], "cs": ["porno"], "hu": ["pornó"], "sv": ["porr"],
         "en": ["porn", "xxx", "sex videos"], "pt": ["porno", "videos porno"], "br": ["porno", "videos de sexo"],
         "es": ["porno", "videos xxx"], "fr": ["porno", "video x"], "de": ["porno", "pornos"],
         "it": ["porno", "video porno"], "nl": ["porno"], "pl": ["porno"], "tr": ["porno"],
@@ -148,6 +191,8 @@ NOMES = {
         "el": ["πορνο"], "ar": ["سكس"],
     },
     "download": {
+        "bn": ["ডাউনলোড"], "el": ["δωρεάν λήψη"], "nl": ["gratis downloaden"], "ro": ["descarca gratis"], "th": ["โหลดฟรี"],
+        "ms": ["muat turun percuma"], "ja": ["ダウンロード 無料"], "ko": ["다운로드"], "zh": ["下載"], "uk": ["скачати безкоштовно"], "cs": ["stáhnout zdarma"], "hu": ["letöltés ingyen"], "sv": ["ladda ner gratis"],
         "en": ["torrent download", "free download", "direct download"], "pt": ["download grátis", "descarregar"],
         "br": ["download grátis", "baixar"], "es": ["descargar gratis", "descarga directa"],
         "fr": ["telecharger gratuit", "ddl"], "de": ["kostenlos herunterladen"], "it": ["scaricare gratis"],
@@ -155,23 +200,31 @@ NOMES = {
         "vi": ["tải miễn phí"], "ar": ["تحميل مجاني"],
     },
     "jogos": {
+        "bn": ["গেম"], "el": ["δωρεάν παιχνίδια"], "nl": ["gratis online spelletjes"], "ro": ["jocuri online gratis"], "th": ["เกมออนไลน์ฟรี"], "vi": ["game online miễn phí"],
+        "ms": ["permainan online"], "ja": ["無料ゲーム"], "ko": ["무료 게임"], "zh": ["免費遊戲"], "uk": ["ігри онлайн"], "cs": ["hry online"], "hu": ["online játékok"], "sv": ["spel online"],
         "en": ["free online games", "play games online"], "pt": ["jogos online grátis"], "br": ["jogos online grátis"],
         "es": ["juegos online gratis"], "fr": ["jeux en ligne gratuits"], "de": ["kostenlose online spiele"],
         "it": ["giochi online gratis"], "pl": ["gry online za darmo"], "tr": ["online oyun"],
         "ru": ["игры онлайн"], "id": ["game online gratis"], "ar": ["العاب اون لاين"],
     },
     "noticias": {
+        "el": ["ειδήσεις"], "nl": ["nieuws"], "ro": ["stiri"], "th": ["ข่าว"], "vi": ["tin tức"],
+        "ms": ["berita"], "bn": ["খবর"], "ja": ["ニュース"], "ko": ["뉴스"], "zh": ["新聞"], "uk": ["новини"], "cs": ["zprávy"], "hu": ["hírek"], "sv": ["nyheter"],
         "en": ["breaking news", "news portal"], "pt": ["notícias", "jornal online"], "br": ["notícias", "portal de notícias"],
         "es": ["noticias", "diario online"], "fr": ["actualités"], "de": ["nachrichten"], "it": ["notizie"],
         "pl": ["wiadomości"], "tr": ["haber"], "ru": ["новости"], "id": ["berita"], "ar": ["اخبار"],
     },
     "musica": {
+        "bn": ["গান ডাউনলোড"], "el": ["δωρεάν μουσική"], "nl": ["muziek downloaden"], "pl": ["pobierz muzykę"], "ro": ["descarca muzica"], "th": ["โหลดเพลง"], "vi": ["tải nhạc"],
+        "ms": ["muat turun lagu"], "ja": ["音楽 ダウンロード"], "ko": ["음악 다운"], "zh": ["音樂下載"], "uk": ["скачати музику"], "cs": ["stáhnout hudbu"], "hu": ["zene letöltés"], "sv": ["ladda ner musik"],
         "en": ["free mp3 download", "listen music online"], "pt": ["música grátis", "baixar música"],
         "br": ["baixar música grátis"], "es": ["descargar musica gratis"], "fr": ["telecharger musique"],
         "de": ["musik kostenlos"], "it": ["scaricare musica"], "tr": ["mp3 indir"], "ru": ["скачать музыку"],
         "id": ["download lagu"], "ar": ["تحميل اغاني"],
     },
     "software": {
+        "bn": ["সফটওয্যার"], "el": ["δωρεάν προγράμματα"], "nl": ["gratis software"], "pl": ["programy do pobrania"], "ro": ["programe gratis"], "th": ["โหลดโปรแกรม"], "vi": ["tải phần mềm"],
+        "ms": ["muat turun aplikasi"], "ja": ["ソフト ダウンロード"], "ko": ["프로그램 다운"], "zh": ["軟體下載"], "uk": ["скачати програми"], "cs": ["programy ke stažení"], "hu": ["program letöltés"], "sv": ["program gratis"],
         "en": ["free software download", "cracked apk", "mod apk"], "pt": ["programas grátis", "apk mod"],
         "br": ["programas grátis", "apk mod"], "es": ["programas gratis", "apk mod"],
         "fr": ["logiciel gratuit"], "de": ["software kostenlos"], "it": ["programmi gratis"],
@@ -183,18 +236,66 @@ NOMES = {
 # Pesquisar por estas frases devolve centenas de sites do mesmo tipo que nenhum
 # ranking comercial lista.
 FOOTPRINTS = {
-    "filmes": ['"Powered by DooPlay"', '"dooplay" filmes', '"WordPress" "assistir online" "temporada"',
-               '"Sitemap" "filmes online" "series online"', '"tema" "cuevana" clone', '"embed" "assistir filme completo"'],
-    "series": ['"Powered by DooPlay" series', '"episodios online" "temporada" site', '"ver serie online" "capitulos"'],
-    "anime": ['"Powered by" "anime online" episodios', '"animes online" "episódios" "legendado"', '"anime" "sub indo" "streaming"'],
-    "manga": ['"Powered by Madara" manga', '"WP Manga" ler online', '"read manga online" "chapter"'],
-    "desporto": ['"live stream" "kick off" "watch free" football', '"jogos ao vivo" "transmissão" futebol'],
-    "adulto": ['"Powered by KVS" tube', '"kernel video sharing"', '"powered by mechbunny"', '"tube" "porn videos" "categories"'],
-    "download": ['"index of" filmes mkv', '"Powered by XFileSharing"', '"ddl" "uptobox" "1fichier"'],
-    "jogos": ['"powered by" "html5 games" arcade', '"jogar jogos online gratis"'],
-    "noticias": ['"Powered by WordPress" "últimas notícias"', '"portal de noticias" "publicidade"'],
-    "musica": ['"download mp3" "baixar" "kbps"', '"free mp3 download" "320kbps"'],
-    "software": ['"apk download" "mod" "latest version"', '"crack" "serial" "download"'],
+    # "*" = assinaturas de CMS/tema, funcionam em qualquer idioma.
+    # As restantes chaves sao por idioma: nao faz sentido procurar "assistir online"
+    # no Japao nem "izle" na Suecia.
+    "filmes": {
+        "*": ['"Powered by DooPlay"', '"Powered by" "dooplay"', '"WP Theme" "cuevana"',
+              '"video embed" "watch full movie" -netflix'],
+        "pt": ['"WordPress" "assistir online" "temporada"', '"filmes online" "series online" sitemap',
+               '"assistir filme completo" "dublado"'],
+        "br": ['"assistir online" "dublado e legendado"', '"filmes online" "series online" sitemap'],
+        "es": ['"ver online" "pelicula completa" "latino"', '"cuevana" clon'],
+        "en": ['"watch online free" "full movie" "no sign up"'],
+        "tr": ['"film izle" "full hd izle"'],
+        "id": ['"nonton film" "sub indo" "lk21"'],
+        "ru": ['"смотреть онлайн" "в хорошем качестве" "бесплатно"'],
+        "ja": ['"無料動画" "フル"'],
+        "ko": ['"다시보기" "무료보기"'],
+        "zh": ['"線上看" "完整版"'],
+    },
+    "series": {
+        "*": ['"Powered by DooPlay" series', '"episodes online" "season" watch free'],
+        "pt": ['"episodios online" "temporada"'], "br": ['"assistir serie online" "episodios"'],
+        "es": ['"ver serie online" "capitulos"'], "tr": ['"dizi izle" "bölüm"'],
+        "ko": ['"드라마 다시보기"'],
+    },
+    "anime": {
+        "*": ['"anime online" "episodes" "sub"', '"Powered by" "anime streaming"'],
+        "pt": ['"animes online" "episódios" "legendado"'], "br": ['"animes online" "dublado"'],
+        "es": ['"anime online" "sub español"'], "id": ['"anime" "sub indo" "batch"'],
+        "ja": ['"アニメ" "無料視聴"'],
+    },
+    "manga": {
+        "*": ['"Powered by Madara"', '"WP Manga" read online', '"read manga online" "chapter"'],
+        "pt": ['"ler manga online" "capítulo"'], "es": ['"leer manga online" "capitulo"'],
+        "id": ['"baca komik" "bahasa indonesia"'],
+    },
+    "desporto": {
+        "*": ['"live stream" "kick off" watch free football', '"live streaming" "hd" football free'],
+        "pt": ['"jogos ao vivo" "transmissão" futebol'], "br": ['"futebol ao vivo" "assistir online"'],
+        "es": ['"ver futbol en vivo" "gratis"'], "tr": ['"canlı maç izle"'],
+        "id": ['"live streaming bola" "gratis"'],
+    },
+    "adulto": {
+        "*": ['"Powered by KVS"', '"kernel video sharing"', '"powered by mechbunny"',
+              '"tube" "porn videos" "categories"'],
+        "es": ['"videos porno" "gratis" "xxx"'], "id": ['"bokep" "video" "terbaru"'],
+        "ja": ['"エロ動画" "無料"'], "ko": ['"야동" "무료"'],
+    },
+    "download": {
+        "*": ['"index of" mkv', '"Powered by XFileSharing"', '"ddl" "uptobox" "1fichier"'],
+        "pt": ['"baixar filmes" "torrent" "magnet"'], "br": ['"download" "dublado" "1080p" magnet"'],
+        "ru": ['"скачать торрент" "бесплатно"'],
+    },
+    "jogos": {"*": ['"powered by" "html5 games" arcade', '"play free online games" "arcade"'],
+              "pt": ['"jogar jogos online gratis"']},
+    "noticias": {"*": ['"Powered by WordPress" "latest news"'],
+                 "pt": ['"portal de noticias" "publicidade"']},
+    "musica": {"*": ['"download mp3" "320kbps"', '"free mp3 download" "album"'],
+               "pt": ['"baixar musica" "mp3" "gratis"']},
+    "software": {"*": ['"apk download" "mod" "latest version"', '"crack" "serial" "download"'],
+                 "pt": ['"baixar programas" "ativador"']},
 }
 
 # Dominios que nunca interessam (majors, CDNs, redes sociais, encurtadores, hosting)
@@ -344,7 +445,7 @@ def http(url, timeout=25, lang=None, cache_horas=0, params=None, stream_max=None
             r = requests.get(url, params=params, headers=headers(lang), timeout=tmo,
                              verify=False, allow_redirects=True)
             if r.status_code == 200:
-                txt = r.text
+                txt = _corrigir_codificacao(r).text
                 if stream_max:
                     txt = txt[:stream_max]
                 if cache_horas:
@@ -375,6 +476,24 @@ def http_bytes(url, timeout=90, cache_horas=0):
     except Exception:
         pass
     return None
+
+
+def _corrigir_codificacao(resp):
+    """Sem charset no cabecalho, o requests assume ISO-8859-1 e estraga tudo o que
+    nao for latino: japones, coreano, chines, russo, grego. Isso corrompia os
+    titulos E as palavras-chave usadas no score."""
+    ct = resp.headers.get("content-type", "").lower()
+    if "charset" not in ct:
+        detectada = None
+        try:
+            cabeca = resp.content[:4096].decode("ascii", "ignore").lower()
+            m = re.search(r'charset=["\']?([a-z0-9\-_]+)', cabeca)
+            if m:
+                detectada = m.group(1)          # <meta charset=...> dentro do HTML
+        except Exception:
+            pass
+        resp.encoding = detectada or resp.apparent_encoding or resp.encoding
+    return resp
 
 
 def normalizar_host(valor):
@@ -519,8 +638,10 @@ def gerar_queries(categoria, pais, keywords, limite=40):
         for pal in cfg["nome"][:1]:
             qs.append(f"{nome} {pal}")
 
-    # footprints de CMS: a mina de ouro para encontrar clones do mesmo nicho
-    for fp in FOOTPRINTS.get(categoria, []):
+    # footprints de CMS: a mina de ouro para encontrar clones do mesmo nicho.
+    # Os genericos ("*") valem em todo o lado; os outros so no idioma do pais.
+    fps = FOOTPRINTS.get(categoria, {})
+    for fp in list(fps.get("*", [])) + list(fps.get(lang, [])):
         qs.append(fp)
         if cfg["tld"]:
             qs.append(f"{fp} site:{cfg['tld']}")
@@ -980,7 +1101,7 @@ def analisar_site(host, termos, pais, timeout=14):
             r["http"] = resp.status_code
             r["url_final"] = resp.url
             if resp.status_code < 400 and resp.text:
-                html = resp.text
+                html = _corrigir_codificacao(resp).text
                 break
         except Exception:
             continue
