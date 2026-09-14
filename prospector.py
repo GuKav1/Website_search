@@ -599,6 +599,20 @@ def _resolver():
 
 
 _CACHE_PARK = {}
+_CACHE_WILDCARD = {}
+
+
+def tem_wildcard(dominio_base):
+    """True se o dominio resolver QUALQUER subdominio.
+    Nesses casos 'ww1.x.com' responde sem ser mirror nenhum - o DNS diz sempre
+    que sim. Sem este teste, a fonte mirrors inventava hosts que nao existem.
+    (goojara.to nao tem wildcard: la o ww1. e mesmo um mirror a serio.)"""
+    if dominio_base in _CACHE_WILDCARD:
+        return _CACHE_WILDCARD[dominio_base]
+    isca = "".join(random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(12))
+    resultado = resolve(f"{isca}.{dominio_base}")
+    _CACHE_WILDCARD[dominio_base] = resultado
+    return resultado
 
 
 def dominio_estacionado(host):
@@ -1020,14 +1034,31 @@ def fonte_mirrors(seeds, workers=120, max_marcas=25, max_candidatos=40000, n_tld
     marcas = list(dict.fromkeys([marca_do_dominio(s) for s in seeds]))
     marcas = [m for m in marcas if len(m) >= 4 and not m.isdigit()][:max_marcas]
     tlds = TLDS_MIRROR[:n_tlds]
-    candidatos = set()
+    bases_prefixos = set()
     for m in marcas:
         base = re.sub(r"\d+$", "", m)
         variantes = list(dict.fromkeys([m, base, base + "hd", base + "tv", base + "2", base + "free"]))
         for v in variantes:
             for tld in tlds:
                 for pre in PREFIXOS_MIRROR[:12]:
-                    candidatos.add(f"{pre}.{v}{tld}" if pre else f"{v}{tld}")
+                    bases_prefixos.add((f"{v}{tld}", pre))
+    # Antes de gerar prefixos, ver quais das bases tem wildcard: nessas, testar
+    # ww1./ww4./w1. e desperdicio, porque respondem todas sem serem mirrors.
+    bases = sorted({b for b, _ in bases_prefixos})
+    log(f"mirrors: a testar wildcard em {len(bases)} bases...")
+    com_wildcard = set()
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        for base, wc in zip(bases, ex.map(tem_wildcard, bases)):
+            if wc:
+                com_wildcard.add(base)
+    if com_wildcard:
+        log(f"mirrors: {len(com_wildcard)} bases com wildcard — só se testa o nome nu")
+
+    candidatos = set()
+    for base, pre in bases_prefixos:
+        if pre and base in com_wildcard:
+            continue                      # prefixo em dominio wildcard = mirror falso
+        candidatos.add(f"{pre}.{base}" if pre else base)
     candidatos = list(candidatos)
     random.shuffle(candidatos)
     candidatos = candidatos[:max_candidatos]
@@ -1364,6 +1395,29 @@ def carregar_exclusoes(extra_ficheiros, usar_historico=True):
     return excl
 
 
+def filtrar_mirrors_falsos(dominios, workers=60):
+    """Remove hosts tipo 'ww1.x.com' quando x.com resolve qualquer subdominio:
+    esses nunca foram mirrors, foi o wildcard do DNS a responder que sim.
+    Um 'ww1.goojara.to' fica, porque goojara.to nao tem wildcard."""
+    suspeitos, limpos = [], []
+    for d in dominios:
+        partes = d.split(".")
+        raiz = dominio_raiz(d)
+        prefixo = d[:-(len(raiz) + 1)] if d.endswith(raiz) and d != raiz else ""
+        if prefixo and prefixo in PREFIXOS_MIRROR:
+            suspeitos.append((d, raiz))
+        else:
+            limpos.append(d)
+    if not suspeitos:
+        return dominios, []
+    raizes = sorted({r for _, r in suspeitos})
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        wildcard = {r for r, w in zip(raizes, ex.map(tem_wildcard, raizes)) if w}
+    removidos = [d for d, r in suspeitos if r in wildcard]
+    limpos += [d for d, r in suspeitos if r not in wildcard]
+    return limpos, removidos
+
+
 def limpar_lista(args):
     """Passa uma lista ja existente pelos filtros novos (blacklist, parking e,
     com --validar, tambem score). Para as listas geradas antes destes filtros."""
@@ -1376,6 +1430,10 @@ def limpar_lista(args):
 
     passo1 = [d for d in originais if not esta_na_blacklist(d)]
     log(f"blacklist de marcas -> ficam {len(passo1)} (-{len(originais)-len(passo1)})")
+
+    passo1, falsos = filtrar_mirrors_falsos(passo1, workers=args.workers * 2)
+    if falsos:
+        log(f"mirrors falsos (wildcard) -> ficam {len(passo1)} (-{len(falsos)}): {', '.join(falsos[:3])}")
 
     passo2 = passo1
     if not args.sem_parking:
