@@ -1082,6 +1082,81 @@ def fonte_mirrors(seeds, workers=120, max_marcas=25, max_candidatos=40000, n_tld
     return vivos
 
 
+def _ficheiro_crux(cc):
+    """URL do ultimo mes disponivel para um pais (ou 'global')."""
+    caminho = "global" if cc == "global" else f"country/{cc}"
+    idx = http(f"https://api.github.com/repos/zakird/crux-top-lists/contents/data/{caminho}",
+               timeout=30, cache_horas=168)
+    if not idx:
+        return None
+    try:
+        fich = sorted(x["name"] for x in json.loads(idx) if x["name"].endswith(".csv.gz"))
+    except Exception:
+        return None
+    if not fich:
+        return None
+    return f"https://raw.githubusercontent.com/zakird/crux-top-lists/main/data/{caminho}/{fich[-1]}"
+
+
+def ranks_crux(dominios, paises):
+    """Posicao no Chrome UX Report para cada dominio, por pais.
+
+    O 'rank' e um escalao: 1000 = entre os 1000 mais visitados NESSE pais,
+    depois 5000, 10000, 50000, 100000, 500000. E trafego medido no Chrome real,
+    nao estimado - e e o unico sinal de trafego que esta ferramenta tem.
+
+    Le os ficheiros a correr em vez de os carregar para memoria: so guarda as
+    linhas dos dominios que interessam.
+    """
+    alvo = {}
+    for d in dominios:
+        alvo.setdefault(dominio_raiz(d), set()).add(d)
+    saida = {d: {} for d in dominios}
+
+    for cc in paises:
+        url = _ficheiro_crux(cc)
+        if not url:
+            log(f"crux[{cc}]: sem ficheiro", "!")
+            continue
+        raw = http_bytes(url, cache_horas=168)
+        if not raw:
+            log(f"crux[{cc}]: download falhou", "!")
+            continue
+        try:
+            texto = gzip.decompress(raw).decode("utf8", "ignore")
+        except Exception:
+            continue
+        achados = 0
+        for linha in texto.splitlines()[1:]:
+            virgula = linha.rfind(",")
+            if virgula < 0:
+                continue
+            host = normalizar_host(linha[:virgula])
+            if not host:
+                continue
+            raiz = dominio_raiz(host)
+            if raiz not in alvo:
+                continue
+            try:
+                posicao = int(linha[virgula + 1:])
+            except ValueError:
+                continue
+            for d in alvo[raiz]:
+                anterior = saida[d].get(cc)
+                if anterior is None or posicao < anterior:
+                    saida[d][cc] = posicao
+                    achados += 1
+        log(f"crux[{cc}]: {sum(1 for d in saida if cc in saida[d])} dos teus dominios tem trafego medido")
+    return saida
+
+
+def pontos_por_rank(posicao):
+    """Rank do CrUX -> pontos no score. Estar no top 1000 de um pais e muito."""
+    if not posicao:
+        return 0
+    return {1000: 25, 5000: 21, 10000: 17, 50000: 12, 100000: 8, 500000: 4}.get(posicao, 2)
+
+
 def fonte_crux(pais, termos, limite=200000):
     """Chrome UX Report (dados reais de trafego do Chrome, por pais).
     Sites com trafego a serio que o SimilarWeb nao lista."""
@@ -1579,25 +1654,59 @@ def correr(args):
     fich_txt = args.out or os.path.join(DIR_OUT, f"alvos_{slug}_{carimbo}.txt")
     fich_csv = args.out_csv or os.path.join(DIR_OUT, f"detalhe_{slug}_{carimbo}.csv")
 
+    # --- trafego real (Chrome UX Report): unico sinal de trafego que existe aqui ---
+    ranks = {}
+    if not args.sem_crux:
+        cc = "global" if pais == "GLOBAL" else pais.lower()[:2]
+        if cc == "uk":
+            cc = "gb"
+        paises_rank = list(dict.fromkeys(
+            [cc] + [p.strip().lower() for p in args.geo.split(",") if p.strip()] + ["global"]))
+        log(f"a medir tráfego em {len(paises_rank)} país(es): {', '.join(paises_rank)}")
+        try:
+            ranks = ranks_crux([d for d, _ in lista], paises_rank)
+        except Exception as e:
+            log(f"crux: falhou ({e}); segue sem dados de tráfego", "!")
+
+    def _info_rank(d):
+        r = ranks.get(d, {})
+        cc_local = "global" if pais == "GLOBAL" else pais.lower()[:2]
+        melhor = sorted(((v, k) for k, v in r.items() if k != "global"))[:3]
+        return {
+            "rank_pais": r.get(cc_local, ""),
+            "rank_global": r.get("global", ""),
+            "trafego_de": " ".join(f"{k}:{v}" for v, k in melhor),
+        }
+
     if args.validar:
         log(f"a validar {len(lista)} sites (abre cada homepage, le titulo/idioma/ads.txt)...")
         resultados = validar_lote([d for d, _ in lista], termos, pais, workers=args.workers)
         for r in resultados:
             r["fonte"] = limpos.get(r["dominio"], "")
+            info = _info_rank(r["dominio"])
+            r.update(info)
+            bonus = pontos_por_rank(info["rank_pais"] or info["rank_global"])
+            if bonus and r.get("score"):
+                r["score"] = min(100, r["score"] + bonus)
+        resultados.sort(key=lambda x: -x.get("score", 0))
         # o CSV guarda tudo o que esta vivo (para poderes rever/ajustar o corte);
         # o .txt so leva o que passa o score minimo
         finais = [r["dominio"] for r in resultados if r.get("score", 0) >= args.min_score]
     else:
-        resultados = [{"dominio": d, "fonte": f, "score": "", "vivo": "", "titulo": "",
-                       "idioma": "", "kw_hits": "", "pais_ok": "", "ads_txt": "", "redes": "",
-                       "http": "", "tamanho": "", "url_final": "", "nota": ""} for d, f in lista]
-        finais = [d for d, _ in lista]
+        resultados = [dict({"dominio": d, "fonte": f, "score": "", "vivo": "", "titulo": "",
+                            "idioma": "", "kw_hits": "", "pais_ok": "", "ads_txt": "", "redes": "",
+                            "http": "", "tamanho": "", "url_final": "", "nota": ""}, **_info_rank(d))
+                      for d, f in lista]
+        # sem validacao, ordena-se pelo trafego: os medidos primeiro
+        resultados.sort(key=lambda r: (-pontos_por_rank(r["rank_pais"] or r["rank_global"]), r["dominio"]))
+        finais = [r["dominio"] for r in resultados]
 
     # --- gravar ---
     with open(fich_txt, "w", encoding="utf8") as f:
         f.write("\n".join(finais) + ("\n" if finais else ""))
-    cols = ["dominio", "score", "fonte", "vivo", "http", "idioma", "kw_hits", "pais_ok",
-            "ads_txt", "redes", "tamanho", "titulo", "url_final", "nota"]
+    cols = ["dominio", "score", "rank_pais", "rank_global", "trafego_de", "fonte", "vivo",
+            "http", "idioma", "kw_hits", "pais_ok", "ads_txt", "redes", "tamanho",
+            "titulo", "url_final", "nota"]
     with open(fich_csv, "w", encoding="utf8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
         w.writeheader()
@@ -1621,9 +1730,12 @@ def correr(args):
         print(f"  vivos analisados   : {len(resultados)}")
         print(f"  score >= 60        : {len(bons)}")
         print(f"  com ads.txt        : {len(com_ads)}  (ja monetizam)")
-        print("\n  TOP 15:")
+        com_trafego = [r for r in resultados if r.get("rank_pais") or r.get("rank_global")]
+        print(f"  com tráfego medido : {len(com_trafego)}  (Chrome UX Report)")
+        print("\n  TOP 15:                                    rank pais / global")
         for r in resultados[:15]:
-            print(f"   {str(r.get('score','')).rjust(3)}  {r['dominio'][:38].ljust(40)} {str(r.get('titulo',''))[:34]}")
+            rk = f"{r.get('rank_pais') or '-'} / {r.get('rank_global') or '-'}"
+            print(f"   {str(r.get('score','')).rjust(3)}  {r['dominio'][:34].ljust(35)} {rk.ljust(18)} {str(r.get('titulo',''))[:26]}")
     print(f"\n  -> LISTA PARA O ROBOT : {fich_txt}")
     print(f"  -> DETALHE (csv)      : {fich_csv}")
     print("=" * 66 + "\n")
@@ -1658,6 +1770,10 @@ paises:     """ + ", ".join(sorted(PAISES.keys())))
     p.add_argument("--excluir", default="", help="ficheiros .txt/.csv extra a excluir (aceita wildcards)")
     p.add_argument("--excluir-regex", default="", dest="excluir_regex", help="regex de dominios a descartar")
     p.add_argument("--tld-pais", action="store_true", dest="tld_pais", help="so aceita dominios com o ccTLD do pais")
+    p.add_argument("--geo", default="",
+                   help="paises extra onde medir o trafego (ex: pt,br,es) — diz de onde vem a audiencia")
+    p.add_argument("--sem-crux", action="store_true", dest="sem_crux",
+                   help="nao medir trafego (mais rapido)")
     p.add_argument("--limpar", default="",
                    help="limpar uma lista .txt ja existente com os filtros actuais (nao pesquisa nada)")
     p.add_argument("--mirrors-tudo", action="store_true", dest="mirrors_tudo",

@@ -160,6 +160,34 @@ dos resultados eram domínios à venda. Por isso:
 - **sem sementes** → expande só os achados cujo nome contenha um termo do nicho
 - `--mirrors-tudo` volta ao comportamento antigo, se quiseres mesmo
 
+## Tráfego: o que o robot sabe e o que não sabe
+
+**Não mede tráfego.** Mede *relevância* e *monetização*. O único sinal de tráfego real
+vem do **Chrome UX Report** — dados do Chrome dos utilizadores, não estimativas.
+
+Cada país tem uma lista de origens com um `rank` em escalões: `1000` = está entre os mil
+sites mais visitados **nesse país**, depois 5000, 10 000, 50 000, 100 000, 500 000, 1M.
+Portugal tem 209 087 origens medidas.
+
+O robot consulta esse rank para **todos** os candidatos, venham da fonte que vierem, e
+acrescenta-o ao score (top 1000 vale +25 pontos). No CSV ficam três colunas:
+
+| coluna | o que diz |
+|---|---|
+| `rank_pais` | escalão no país que escolheste |
+| `rank_global` | escalão mundial |
+| `trafego_de` | os 3 países onde está melhor posicionado |
+
+`--geo br,es` mede também nesses países. É assim que se vê de onde vem a audiência:
+`vegamoviess.dev` é top 5 000 mundial mas só 100 000 em Portugal — grande lá fora,
+pequeno cá. `cifraclub.com.br` é top 1000 em PT **e** BR.
+
+`--sem-crux` desliga (mais rápido, sem dados de tráfego).
+
+**Limites honestos**: o CrUX só vê utilizadores de Chrome com sincronização e sinalização
+activas, só inclui sites acima de um mínimo de tráfego, e os escalões são grossos — não
+te dá visitas por mês. Para números finos, é preciso uma fonte paga.
+
 ## Score (0–100)
 
 `15 base + relevância (até 35) + sinais de país (até 15) + ads.txt (12–17) + rede de ads (10) + site com conteúdo (5) + HTTP 200 (3)`
