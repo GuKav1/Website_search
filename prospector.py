@@ -335,6 +335,20 @@ TLD_MULTI = {
     "com.bd", "com.gr", "com.cy", "org.il", "co.il", "net.in", "org.in",
 }
 
+# Nameservers de serviços de parking / revenda de dominios. Um dominio servido
+# por estes esta a venda ou e de um especulador: nao tem dono com quem falar nem
+# trafego nenhum. Detectar por NS e muito mais fiavel do que pelo texto da pagina
+# (as paginas da Afternic e companhia sao um redirect em JS, sem texto nenhum).
+NS_PARKING = [
+    "sedoparking", "sedo.com", "parkingcrew", "bodis", "above.com", "dan.com",
+    "afternic", "hugedomains", "uniregistry", "fabulous.com", "parklogic",
+    "smartname", "dsredirection", "dsredir", "sav.com", "undeveloped",
+    "voodoo.com", "namefind", "parkpage", "cashparking", "domainmarket",
+    "brandbucket", "efty", "ztomy", "name-services", "parktons", "trellian",
+    "internettraffic", "rookdns", "parking-page", "domainparking", "parkingpage",
+    "buydomains", "hostingpark", "squadhelp", "atom.com", "domize", "sedomls",
+]
+
 # Prefixos tipicos de mirrors/clones (o teu Alvos2.txt esta cheio deles: ww1., ww4., ...)
 PREFIXOS_MIRROR = ["", "www", "ww1", "ww2", "ww3", "ww4", "ww5", "ww6", "ww7", "ww8", "ww9",
                    "w1", "w2", "m", "new", "new1", "tv", "hd", "watch", "go", "play", "s1", "s2",
@@ -534,7 +548,10 @@ def marca_do_dominio(host):
 
 MARCAS_BLOQUEADAS = {d.split(".")[0] for d in BLACKLIST_EXATA} | {
     "google", "youtube", "facebook", "instagram", "netflix", "amazon", "apple", "microsoft",
-    "twitter", "tiktok", "whatsapp", "telegram", "paypal", "wikipedia", "bitcoin", "cloudflare"}
+    "twitter", "tiktok", "whatsapp", "telegram", "paypal", "wikipedia", "bitcoin", "cloudflare",
+    "espn", "razer", "steampowered", "steam", "yandex", "insta", "insta360", "nimo", "brave",
+    "hackerone", "digitalcitizen", "nvidia", "intel", "samsung", "xiaomi", "huawei", "adobe",
+    "spotify", "twitch", "roblox", "minecraft", "epicgames", "playstation", "xbox", "nintendo"}
 
 
 def esta_na_blacklist(host):
@@ -579,6 +596,47 @@ def _resolver():
         else:
             _RESOLVER = False
     return _RESOLVER
+
+
+_CACHE_PARK = {}
+
+
+def dominio_estacionado(host):
+    """True se o dominio estiver num servico de parking/revenda.
+    Uma consulta NS por dominio-raiz, com cache: barato e apanha o que a leitura
+    da pagina nao apanha."""
+    raiz = dominio_raiz(host)
+    if raiz in _CACHE_PARK:
+        return _CACHE_PARK[raiz]
+    servidores = ""
+    r = _resolver()
+    if r:
+        try:
+            servidores = " ".join(str(x.target).lower() for x in r.resolve(raiz, "NS"))
+        except Exception:
+            servidores = ""
+    estacionado = any(m in servidores for m in NS_PARKING)
+    _CACHE_PARK[raiz] = estacionado
+    return estacionado
+
+
+def filtrar_estacionados(dominios, workers=60):
+    """Remove dominios a venda. Devolve (limpos, removidos)."""
+    limpos, removidos = [], []
+    feitos = [0]
+    total = len(dominios)
+
+    def _um(d):
+        mau = dominio_estacionado(d)
+        feitos[0] += 1
+        if feitos[0] % 500 == 0:
+            log(f"parking: {feitos[0]}/{total} verificados, {len(removidos)} a venda")
+        return d, mau
+
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        for d, mau in ex.map(_um, dominios):
+            (removidos if mau else limpos).append(d)
+    return limpos, removidos
 
 
 def resolve(host):
@@ -1102,9 +1160,14 @@ def fonte_commoncrawl(seeds, max_seeds=25):
 RE_GATEWAY = re.compile(r"(var\s+redirect_link|/js/fingerprint/|location\.replace\(|location\.href\s*=|"
                         r"http-equiv=[\"']refresh|__cf_chl|challenge-platform|just a moment)", re.I)
 
-RE_LIXO = re.compile(r"(domain (is )?for sale|comprar este dom|this domain is parked|buy this domain|"
-                     r"parkingcrew|sedoparking|afternic|dan\.com|godaddy.*parked|coming soon|"
-                     r"under construction|site em constru|default web page|apache2 ubuntu)", re.I)
+RE_LIXO = re.compile(
+    r"(domain (name )?(is |may be )?for sale|comprar este dom|dominio en venta|domain kaufen|"
+    r"this domain is parked|buy th(is|e) domain|purchase this domain|get this domain|"
+    r"make an offer|inquire about this domain|checkout the domain|"
+    r"parkingcrew|sedoparking|sedo\.com|afternic|dan\.com|hugedomains|bodis|undeveloped|"
+    r"squadhelp|brandbucket|buydomains|godaddy.*parked|domain parking|parked free|"
+    r"coming soon|under construction|site em constru|em manuten|default web page|"
+    r"apache2 ubuntu|welcome to nginx|it works!|index of /)", re.I)
 
 
 def analisar_site(host, termos, pais, timeout=14):
@@ -1141,6 +1204,20 @@ def analisar_site(host, termos, pais, timeout=14):
     texto = " ".join([r["titulo"], meta_desc, " ".join(h.get_text(" ", strip=True) for h in soup.find_all(["h1", "h2"])[:15])]).lower()
     corpo = soup.get_text(" ", strip=True)[:20000].lower()
 
+    # Muitos dos melhores alvos sao SPAs: o texto vem por JS e o get_text() vem quase
+    # vazio. So se marca como estacionado quando o HTML tambem e pobre.
+    n_scripts = baixo.count("<script")
+    parece_app = n_scripts >= 3 or len(html) > 25000
+    if RE_LIXO.search(baixo[:5000]) or (len(corpo) < 200 and not parece_app):
+        r["nota"] = "parked/vazio"
+        return r
+    # o teste de estacionado tem de vir ANTES do de gateway-js: as paginas da
+    # Afternic sao um redirect em JS e passavam por "muro de monetizacao"
+    if dominio_estacionado(host):
+        r["nota"] = "a venda (parking)"
+        r["score"] = 0
+        return r
+
     if len(corpo) < 400 and RE_GATEWAY.search(baixo):
         # nao da para ler o conteudo sem browser: marca e deixa passar com score
         # neutro-positivo, para o scraper Playwright decidir depois
@@ -1150,13 +1227,6 @@ def analisar_site(host, termos, pais, timeout=14):
             r["score"] += 8
         return r
 
-    # Muitos dos melhores alvos sao SPAs: o texto vem por JS e o get_text() vem quase
-    # vazio. So se marca como estacionado quando o HTML tambem e pobre.
-    n_scripts = baixo.count("<script")
-    parece_app = n_scripts >= 3 or len(html) > 25000
-    if RE_LIXO.search(baixo[:5000]) or (len(corpo) < 200 and not parece_app):
-        r["nota"] = "parked/vazio"
-        return r
     if len(corpo) < 200:
         r["nota"] = "spa/js"
 
@@ -1294,6 +1364,43 @@ def carregar_exclusoes(extra_ficheiros, usar_historico=True):
     return excl
 
 
+def limpar_lista(args):
+    """Passa uma lista ja existente pelos filtros novos (blacklist, parking e,
+    com --validar, tambem score). Para as listas geradas antes destes filtros."""
+    cam = args.limpar if os.path.isabs(args.limpar) else os.path.join(BASE, args.limpar)
+    if not os.path.exists(cam):
+        print(f"ERRO: nao encontrei {cam}")
+        return 1
+    originais = [l.strip() for l in open(cam, encoding="utf8", errors="ignore") if l.strip()]
+    log(f"a limpar {len(originais)} dominios de {os.path.basename(cam)}")
+
+    passo1 = [d for d in originais if not esta_na_blacklist(d)]
+    log(f"blacklist de marcas -> ficam {len(passo1)} (-{len(originais)-len(passo1)})")
+
+    passo2 = passo1
+    if not args.sem_parking:
+        passo2, venda = filtrar_estacionados(passo1, workers=args.workers * 2)
+        log(f"parking -> ficam {len(passo2)} (-{len(venda)} a venda)")
+
+    finais, resultados = passo2, []
+    if args.validar:
+        cfg = PAISES.get(args.pais.upper(), PAISES["GLOBAL"])
+        termos = [k.strip() for k in (args.keywords or "").split(",") if k.strip()]
+        cat = (args.categoria or "").lower().strip()
+        if cat in NOMES:
+            termos += NOMES[cat].get(cfg["lang"], []) + NOMES[cat].get("en", [])
+        resultados = validar_lote(passo2, termos, args.pais, workers=args.workers)
+        finais = [r["dominio"] for r in resultados if r.get("score", 0) >= args.min_score]
+        log(f"validacao -> ficam {len(finais)} com score >= {args.min_score}")
+
+    destino = args.out or cam.replace(".txt", "_limpo.txt")
+    with open(destino, "w", encoding="utf8") as f:
+        f.write("\n".join(finais) + ("\n" if finais else ""))
+    print(f"\n  {len(originais)} -> {len(finais)} dominios  ({100*(len(originais)-len(finais))//max(len(originais),1)}% removido)")
+    print(f"  -> {destino}\n")
+    return 0
+
+
 def correr(args):
     global VERBOSE
     VERBOSE = not args.quieto
@@ -1345,9 +1452,29 @@ def correr(args):
         else:
             log("links: sem sementes, saltado", "!")
     if "mirrors" in fontes:
-        base_m = set(seeds) | set(list(achados.keys())[:60])
+        # A 'mirrors' aprofunda marcas que ja conheces; nao explora.
+        # Alimentada com qualquer dominio descoberto, pega em marcas famosas
+        # (espn, steampowered, razer) e gera espaco de especulador: numa corrida
+        # real deu 73% de dominios a venda. Por isso: sementes explicitas, ou
+        # so os achados cujo nome contenha um termo do nicho.
+        if seeds:
+            base_m = set(seeds)
+            log(f"mirrors: a partir de {len(base_m)} sementes tuas")
+        else:
+            padroes = [re.sub(r"[^a-z0-9]", "", t.lower()) for t in termos]
+            padroes = [p for p in padroes if len(p) >= 4]
+            base_m = {d for d in list(achados)[:400]
+                      if any(p in re.sub(r"[^a-z0-9]", "", marca_do_dominio(d)) for p in padroes)}
+            if args.mirrors_tudo:
+                base_m = set(list(achados.keys())[:60])
+                log("mirrors: --mirrors-tudo ligado, a expandir qualquer marca encontrada", "!")
+            else:
+                log(f"mirrors: sem sementes; a expandir so as {len(base_m)} marcas do nicho "
+                    f"(usa --seeds ou --mirrors-tudo para mais)")
         if base_m:
             juntar(fonte_mirrors(base_m, max_candidatos=args.max_mirror, n_tlds=args.mirror_tlds))
+        else:
+            log("mirrors: nada para expandir, saltado", "!")
     if "commoncrawl" in fontes:
         base_cc = set(seeds) | set(list(achados.keys())[:25])
         if base_cc:
@@ -1371,6 +1498,18 @@ def correr(args):
         chave = dominio_raiz(d) if args.nivel == "dominio" else d
         limpos.setdefault(chave, fonte)
     log(f"LIMPO: {len(limpos)} candidatos (blacklist/duplicados/ja contactados removidos)")
+
+    # Filtro de parking antes de tudo o resto: uma consulta NS por dominio apanha
+    # o que a leitura da pagina nao apanha, e poupa abrir sites que estao a venda.
+    if not args.sem_parking and limpos:
+        antes = len(limpos)
+        candidatos = list(limpos.keys())
+        log(f"a verificar parking em {antes} dominios (consulta NS)...")
+        bons, a_venda = filtrar_estacionados(candidatos, workers=args.workers * 2)
+        limpos = {d: limpos[d] for d in bons}
+        log(f"parking: removidos {len(a_venda)} dominios a venda ({100*len(a_venda)//max(antes,1)}%)")
+        if a_venda[:3]:
+            log(f"   exemplos: {', '.join(a_venda[:3])}")
 
     lista = list(limpos.items())
     random.shuffle(lista)
@@ -1461,6 +1600,12 @@ paises:     """ + ", ".join(sorted(PAISES.keys())))
     p.add_argument("--excluir", default="", help="ficheiros .txt/.csv extra a excluir (aceita wildcards)")
     p.add_argument("--excluir-regex", default="", dest="excluir_regex", help="regex de dominios a descartar")
     p.add_argument("--tld-pais", action="store_true", dest="tld_pais", help="so aceita dominios com o ccTLD do pais")
+    p.add_argument("--limpar", default="",
+                   help="limpar uma lista .txt ja existente com os filtros actuais (nao pesquisa nada)")
+    p.add_argument("--mirrors-tudo", action="store_true", dest="mirrors_tudo",
+                   help="deixar a fonte mirrors expandir qualquer marca encontrada (gera muito lixo)")
+    p.add_argument("--sem-parking", action="store_true", dest="sem_parking",
+                   help="nao filtrar dominios estacionados/a venda (mais rapido, lista mais suja)")
     p.add_argument("--repetir", action="store_true", help="nao usar o historico _ja_vistos.txt")
     p.add_argument("--queries", type=int, default=40, help="numero de queries de pesquisa a gerar")
     p.add_argument("--paginas", type=int, default=3, help="paginas de resultados por query")
@@ -1476,7 +1621,7 @@ paises:     """ + ", ".join(sorted(PAISES.keys())))
     p.add_argument("--quieto", action="store_true")
     args = p.parse_args()
     try:
-        return correr(args)
+        return limpar_lista(args) if args.limpar else correr(args)
     except KeyboardInterrupt:
         print("\ninterrompido pelo utilizador.")
         return 130

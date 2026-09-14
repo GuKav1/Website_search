@@ -127,6 +127,39 @@ demoravam 23 minutos, agora demoram 17 segundos.
   --queries 80 --paginas 5 --profundidade 2 --max 20000 --validar --min-score 35
 ```
 
+## Limpeza: o que nunca chega à lista
+
+Três filtros, por esta ordem, antes de gastar tempo a abrir seja o que for:
+
+1. **Blacklist de marcas** — plataformas grandes e marcas conhecidas (`espn`, `steampowered`,
+   `netflix`…). Um `ww1.steampowered.org` é um especulador, não um prospect.
+2. **Parking (consulta NS)** — um domínio servido pela Afternic, Sedo, Bodis, DAN e companhia
+   está à venda: não tem dono com quem falar nem tráfego. **Detectar por nameserver é muito mais
+   fiável do que pelo texto** — as páginas de parking são um redirect em JS, sem texto nenhum.
+   Numa lista real apanhou 125 de 170 em 2,6 segundos. Desligar: `--sem-parking`.
+3. **Validação** — abre o site e pontua (só com `--validar`).
+
+Numa lista real de 170 domínios: **162 removidos, 95%**. Os 8 que sobraram eram todos sites
+reais do nicho.
+
+### Limpar listas antigas
+
+```bash
+../.venv/bin/python prospector.py --limpar resultados/alvos_xxx.txt --validar --min-score 40
+```
+
+Passa uma lista já existente pelos filtros actuais e escreve um `_limpo.txt` ao lado.
+
+### A fonte `mirrors` aprofunda, não explora
+
+Ela gera `ww1.marca.to`, `marca2.cc`… a partir de marcas. Alimentada com qualquer domínio
+descoberto, pega em marcas famosas e gera espaço de especuladores — numa corrida real, 73%
+dos resultados eram domínios à venda. Por isso:
+
+- **com `--seeds`** → expande as tuas sementes (é para isto que ela serve)
+- **sem sementes** → expande só os achados cujo nome contenha um termo do nicho
+- `--mirrors-tudo` volta ao comportamento antigo, se quiseres mesmo
+
 ## Score (0–100)
 
 `15 base + relevância (até 35) + sinais de país (até 15) + ads.txt (12–17) + rede de ads (10) + site com conteúdo (5) + HTTP 200 (3)`
@@ -144,6 +177,7 @@ A coluna `nota` do CSV:
 | `spa/js` | conteúdo renderizado por JS; só se leu o HTML cru (+8 de compensação) |
 | `gateway-js` | muro de fingerprint/redirect à entrada → **score fixo 42**. Não se lê sem browser, mas quem põe um muro destes está a monetizar tráfego: vai para a lista e o teu Playwright resolve |
 | `parked/vazio` | domínio estacionado ou à venda → fora |
+| `a venda (parking)` | nameservers de um serviço de revenda → score 0 |
 | `fora do nicho` | vivo mas sem uma única palavra-chave → travado em 22 |
 
 Referência: `≥60` excelente · `45–59` bom · `35–44` duvidoso · `<35` lixo.
